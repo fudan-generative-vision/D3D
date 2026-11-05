@@ -12,9 +12,9 @@ export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 "${PY:-python}" -m torch.distributed.run \
     --nproc_per_node "${NUM_GPUS:-4}" \
     --master_port "${MASTER_PORT:-29674}" \
-    --module train.train \
+    --module training.train.train \
     --draft-model "${DRAFT_MODEL:-checkpoints/Qwen3-1.7B}" \
-    --draft-code-model "$PWD/models/d3d_training" \
+    --draft-code-model "$PWD/training/model" \
     --tokenizer-model "${TARGET_MODEL:-checkpoints/Qwen3-8B}" \
     --data-path "${DATA_PATH:-data/train.jsonl}" \
     --output-dir "${OUTPUT_DIR:-outputs/d3d_b16_a128}" \

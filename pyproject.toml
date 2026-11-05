@@ -12,7 +12,7 @@ license = { file = "LICENSE" }
 dependencies = []
 
 [project.entry-points."sglang.srt.plugins"]
-d3d_strict = "d3d_sglang.plugin:register"
+d3d_strict = "inference.sglang.plugin:register"
 
 [project.urls]
 Homepage = "https://github.com/fudan-generative-vision/D3D"
@@ -20,10 +20,8 @@ Repository = "https://github.com/fudan-generative-vision/D3D"
 Models = "https://huggingface.co/collections/fudan-generative-ai/d3d"
 
 [tool.setuptools.packages.find]
-include = ["single*", "serving*", "models*", "common*", "d3d_sglang*", "train*", "pruning*"]
+include = ["inference*", "training*", "common*"]
 namespaces = true
 
 [tool.setuptools.package-data]
-serving = ["vendor/SSD_LICENSE", "vendor/UPSTREAM.md"]
-"models.d3d" = ["APACHE_LICENSE"]
-"models.d3d_training" = ["config.json"]
+"training.model" = ["config.json"]

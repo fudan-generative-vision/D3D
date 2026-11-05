@@ -72,7 +72,7 @@ pip install -e . --no-deps
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1
 
-# 可选：覆盖所有脚本的默认模型
+# 可选：覆盖下面使用的默认模型
 export TARGET_MODEL=Qwen/Qwen3-8B
 export DRAFT_MODEL=fudan-generative-ai/D3D-1.7B-8B
 ```
@@ -84,39 +84,43 @@ export DRAFT_MODEL=fudan-generative-ai/D3D-1.7B-8B
 **单请求** —— 一条 MATH-500 样本，最多生成 128 个 token：
 
 ```bash
-bash scripts/quickstart_single.sh
-
-# 例如换一对模型并放宽生成长度
-bash scripts/quickstart_single.sh \
-    --verifier Qwen/Qwen3-32B \
-    --drafter fudan-generative-ai/D3D-24D-p1.7B-32B \
-    --max-new-tokens 512
+python inference/native/single_request/eval_async_packed.py \
+    --drafter "$DRAFT_MODEL" \
+    --verifier "$TARGET_MODEL" \
+    --dataset math500 \
+    --max-samples 1 \
+    --max-new-tokens 128 \
+    --verifier-device cuda:0 \
+    --draft-device cuda:1 \
+    --dtype bf16 \
+    --temperature 0 \
+    --block-size 16 \
+    --denoising-steps 1 \
+    --attention-mask-mode causal \
+    --anchor-num 3 \
+    --packed-accepted-counts all \
+    --output-json outputs/single_request/result.json \
+    --summary-json outputs/single_request/summary.json
 ```
 
-**并发请求** —— 四请求并发 4：
+**多请求** —— 四请求并发 4：
 
 ```bash
-bash scripts/quickstart_concurrent.sh
-
-# 例如并发 8、每卡 256 个 KV page
-CONCURRENCY=8 bash scripts/quickstart_concurrent.sh --pages 256
+python inference/native/multi_request/bench.py \
+    --target "$TARGET_MODEL" \
+    --draft "$DRAFT_MODEL" \
+    --datasets math500 \
+    --max-samples 4 \
+    --max-new-tokens 128 \
+    --concurrency 4 \
+    --anchor-num 3 \
+    --pages 512 \
+    --output outputs/multi_request/result.json
 ```
 
-<details>
-<summary><strong>使用 32B 目标 + 24 层剪枝草稿</strong></summary>
-
-```bash
-bash scripts/quickstart_single.sh \
-    --verifier Qwen/Qwen3-32B \
-    --drafter fudan-generative-ai/D3D-24D-p1.7B-32B
-
-bash scripts/quickstart_concurrent.sh \
-    --target Qwen/Qwen3-32B \
-    --draft fudan-generative-ai/D3D-24D-p1.7B-32B \
-    --concurrency 4 --pages 128
-```
-
-</details>
+通过覆盖 `TARGET_MODEL` / `DRAFT_MODEL` 切换模型对。需要更长生成时调大
+`--max-new-tokens`；多请求运行时调大 `--concurrency`，并按 KV 预算调整
+`--pages`。
 
 <a id="benchmarking"></a>
 
@@ -125,13 +129,13 @@ bash scripts/quickstart_concurrent.sh \
 在标准数据集上运行单请求评测：
 
 ```bash
-bash scripts/benchmark.sh
+bash scripts/benchmark_single_request.sh
 ```
 
-在并发 1、4、8、16 下运行并发评测：
+在并发 1、4、8、16 下运行多请求评测：
 
 ```bash
-bash scripts/benchmark_concurrent.sh
+bash scripts/benchmark_multi_request.sh
 ```
 
 评测数据在运行时下载。来源与 split 见
@@ -214,7 +218,7 @@ D3D-1.7B → Qwen3-8B，单并发，`anchor_num=1`，block size 16，
 
 ## 🏋️ 训练与层剪枝
 
-训练代码位于 `train/` 和 `pruning/`，包括基于 target 生成回答的离线训练、
+训练代码位于 `training/train/` 和 `training/pruning/`，包括基于 target 生成回答的离线训练、
 层选择、物理剪枝、恢复训练和恢复 checkpoint 选择。
 
 训练与原生推理使用上面通过 `requirements.txt` 安装的**同一环境**。

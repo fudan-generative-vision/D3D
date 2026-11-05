@@ -26,9 +26,9 @@ target remains autoregressive.
 
 | Component | GPU | Responsibility | Code |
 |:---|:---:|:---|:---|
-| Diffusion draft | 1 | Generate blocks and packed continuation candidates | `models/d3d/`, `single/eval_async_packed.py` |
-| Target verifier | 0 | Verify pending drafts and provide anchor tokens | `single/eval_sync.py`, `serving/backend.py` |
-| Coordinator | both | Commit accepted tokens and select reusable candidates from verification feedback | `single/eval_async_packed.py`, `serving/engine.py` |
+| Diffusion draft | 1 | Generate blocks and packed continuation candidates | `inference/model/`, `inference/native/single_request/eval_async_packed.py` |
+| Target verifier | 0 | Verify pending drafts and provide anchor tokens | `inference/native/single_request/eval_sync.py`, `inference/native/multi_request/backend.py` |
+| Coordinator | both | Commit accepted tokens and select reusable candidates from verification feedback | `inference/native/single_request/eval_async_packed.py`, `inference/native/multi_request/engine.py` |
 
 ## Decode cycle
 
@@ -47,10 +47,10 @@ feedback determines which candidate can be reused.
 
 | Path | Entry point | Cache and scheduling |
 |:---|:---|:---|
-| Single request | `single/eval_async_packed.py` | Per-request draft and target caches |
-| Concurrent requests | `python -m serving.bench` | Paged KV caches, request admission, draft microbatches |
+| Single-request | `inference/native/single_request/eval_async_packed.py` | Per-request draft and target caches |
+| Multi-request | `python -m inference.native.multi_request.bench` | Paged KV caches, request admission, draft microbatches |
 
-`models/d3d/configuration_d3d.py` and `modeling_d3d.py` define `D3DConfig`,
+`inference/model/configuration_d3d.py` and `modeling_d3d.py` define `D3DConfig`,
 `D3DModel`, and `D3DForCausalLM`. The loader accepts both D3D and legacy draft
 type tags without executing Hub-hosted Python.
 

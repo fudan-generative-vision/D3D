@@ -1,6 +1,6 @@
 import unittest
 from types import SimpleNamespace
-from d3d_sglang.service import StrictDraftService
+from inference.sglang.service import StrictDraftService
 from sglang.srt.speculative.decoupled.protocol import Branch, Proposal
 
 

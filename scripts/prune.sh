@@ -8,8 +8,8 @@ export TOKENIZERS_PARALLELISM=false
 ACTION="${1:-help}"
 if [ "$#" -gt 0 ]; then shift; fi
 case "$ACTION" in
-    select) "${PY:-python}" -m pruning.select_layer "$@" ;;
-    prune) "${PY:-python}" -m pruning.prune "$@" ;;
+    select) "${PY:-python}" -m training.pruning.select_layer "$@" ;;
+    prune) "${PY:-python}" -m training.pruning.prune "$@" ;;
     train)
         if [[ "${1:-}" != "--nproc-per-node" || $# -lt 3 ]]; then
             echo "train requires --nproc-per-node N followed by recovery arguments" >&2
@@ -24,10 +24,10 @@ case "$ACTION" in
         "${PY:-python}" -m torch.distributed.run \
             --standalone \
             --nproc_per_node "$NPROC" \
-            --module pruning.train_recovery \
+            --module training.pruning.train_recovery \
             "$@"
         ;;
-    choose) "${PY:-python}" -m pruning.select_checkpoint "$@" ;;
+    choose) "${PY:-python}" -m training.pruning.select_checkpoint "$@" ;;
     help|-h|--help) echo "Usage: bash scripts/prune.sh {select|prune|train|choose} [arguments]; see docs/training.md" ;;
     *) echo "Unknown pruning action: $ACTION" >&2; exit 2 ;;
 esac

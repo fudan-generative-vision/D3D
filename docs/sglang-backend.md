@@ -135,11 +135,10 @@ setting, temperature, token cap, and a disjoint warmup prompt.
 draft-only accepted tokens. EOS and token-cap trimming can reduce the final
 verification's contribution. AR uses one GPU; remote D3D uses two.
 
-Integration checks:
+Integration check:
 
 ```bash
 .venv-sglang/bin/python scripts/sglang/test_remote.py
-python -m unittest discover -s tests -p test_sglang_benchmark.py -v
 ```
 
 ## Anchor sweep
@@ -162,5 +161,3 @@ workload-specific result.
 
 The SGLang snapshot is from `wintem0531/sglang-speedup-nvidia`, commit
 `db686d124840ebfdd61e787b3a7fbf543244b6f0`, based on SGLang `v0.5.18`.
-See `../third_party/sglang/UPSTREAM_D3D.md` for attribution and the export
-boundary.

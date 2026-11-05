@@ -74,7 +74,7 @@ pip install -e . --no-deps
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1
 
-# optional: override the defaults for every script
+# optional: override the defaults used below
 export TARGET_MODEL=Qwen/Qwen3-8B
 export DRAFT_MODEL=fudan-generative-ai/D3D-1.7B-8B
 ```
@@ -83,42 +83,46 @@ The target runs on `cuda:0`, and the draft runs on `cuda:1`.
 
 ### 2. Run asynchronous decoding
 
-**Single request** — one MATH-500 sample, up to 128 generated tokens:
+**Single-request** — one MATH-500 sample, up to 128 generated tokens:
 
 ```bash
-bash scripts/quickstart_single.sh
-
-# e.g. another pair with a longer generation cap
-bash scripts/quickstart_single.sh \
-    --verifier Qwen/Qwen3-32B \
-    --drafter fudan-generative-ai/D3D-24D-p1.7B-32B \
-    --max-new-tokens 512
+python inference/native/single_request/eval_async_packed.py \
+    --drafter "$DRAFT_MODEL" \
+    --verifier "$TARGET_MODEL" \
+    --dataset math500 \
+    --max-samples 1 \
+    --max-new-tokens 128 \
+    --verifier-device cuda:0 \
+    --draft-device cuda:1 \
+    --dtype bf16 \
+    --temperature 0 \
+    --block-size 16 \
+    --denoising-steps 1 \
+    --attention-mask-mode causal \
+    --anchor-num 3 \
+    --packed-accepted-counts all \
+    --output-json outputs/single_request/result.json \
+    --summary-json outputs/single_request/summary.json
 ```
 
-**Concurrent requests** — four samples at concurrency 4:
+**Multi-request** — four samples at concurrency 4:
 
 ```bash
-bash scripts/quickstart_concurrent.sh
-
-# e.g. concurrency 8 with 256 KV pages
-CONCURRENCY=8 bash scripts/quickstart_concurrent.sh --pages 256
+python inference/native/multi_request/bench.py \
+    --target "$TARGET_MODEL" \
+    --draft "$DRAFT_MODEL" \
+    --datasets math500 \
+    --max-samples 4 \
+    --max-new-tokens 128 \
+    --concurrency 4 \
+    --anchor-num 3 \
+    --pages 512 \
+    --output outputs/multi_request/result.json
 ```
 
-<details>
-<summary><strong>Use the 32B target with the 24-layer pruned draft</strong></summary>
-
-```bash
-bash scripts/quickstart_single.sh \
-    --verifier Qwen/Qwen3-32B \
-    --drafter fudan-generative-ai/D3D-24D-p1.7B-32B
-
-bash scripts/quickstart_concurrent.sh \
-    --target Qwen/Qwen3-32B \
-    --draft fudan-generative-ai/D3D-24D-p1.7B-32B \
-    --concurrency 4 --pages 128
-```
-
-</details>
+Override `TARGET_MODEL` / `DRAFT_MODEL` for another model pair. Increase
+`--max-new-tokens` for longer generations; for multi-request runs, increase
+`--concurrency` and adjust `--pages` to fit the KV budget.
 
 <a id="benchmarking"></a>
 
@@ -127,13 +131,13 @@ bash scripts/quickstart_concurrent.sh \
 Run single-request evaluation over the standard datasets:
 
 ```bash
-bash scripts/benchmark.sh
+bash scripts/benchmark_single_request.sh
 ```
 
-Run concurrent evaluation at request concurrency 1, 4, 8, and 16:
+Run multi-request evaluation at request concurrency 1, 4, 8, and 16:
 
 ```bash
-bash scripts/benchmark_concurrent.sh
+bash scripts/benchmark_multi_request.sh
 ```
 
 Datasets are downloaded at runtime. See the
@@ -218,7 +222,7 @@ Each corpus targets the listed model; use the matching tokenizer for training.
 
 ## 🏋️ Training and Layer Pruning
 
-Training code lives in `train/` and `pruning/`, including
+Training code lives in `training/train/` and `training/pruning/`, including
 offline training on target-generated responses, layer selection, physical
 pruning, recovery training, and recovery-checkpoint selection.
 

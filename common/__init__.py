@@ -1,1 +1,1 @@
-"""Shared helpers used by the single-request and serving entry points."""
+"""Shared helpers used by the single-request and multi-request entry points."""

@@ -41,10 +41,10 @@ settings, and concurrency as the D3D run. It runs on the target GPU only.
 
 Single-request timing excludes target/draft prefill and the first target token
 emitted during prefill. `output_tokens` still counts every generated token.
-Concurrent timing includes prefill, request admission, decode, and drain.
+Multi-request timing includes prefill, request admission, decode, and drain.
 Neither measurement includes model loading, warmup, or tokenization.
 
-Single-request summaries store the metrics under `headline`; concurrent cells
+Single-request summaries store the metrics under `headline`; multi-request cells
 store them at the top level and under `summary`. `--no-baseline` skips the
 baseline and leaves `speedup` empty.
 
@@ -59,18 +59,18 @@ not answer quality.
 
 Scripts forward extra flags to their Python entry point. Override datasets with
 `DATASETS="math500 humaneval"`. Select models with `--verifier` / `--drafter`
-for single-request runs or `--target` / `--draft` for concurrent runs; the
+for single-request runs or `--target` / `--draft` for multi-request runs; the
 scripts fall back to `TARGET_MODEL` / `DRAFT_MODEL`.
 
 Defaults: block size 16, one denoising step, three anchor branches, greedy
 decoding, thinking disabled, and causal draft-prefix attention. Concurrency 1
-keeps three anchors; concurrent cells use one anchor because multiple branches
+keeps three anchors; multi-request cells use one anchor because multiple branches
 do not fit the paged KV budget when requests overlap. `--anchor-num` overrides
 both.
 
 `--max-new-tokens` overrides the 2048-token limit for smoke runs; shorter runs
 are not formal protocol results. `--max-samples` changes the sample cap. The
-concurrent script runs each concurrency separately and writes one result file
+multi-request script runs each concurrency separately and writes one result file
 per cell (`benchmark_c1.json`, `benchmark_c4.json`, ...).
 
 The paged KV cache defaults to 512 pages per device. A 32B target may require a

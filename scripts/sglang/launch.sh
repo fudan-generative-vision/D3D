@@ -11,7 +11,7 @@ ENDPOINT="${DRAFT_ENDPOINT:-tcp://127.0.0.1:17891}"
 export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1}"
 export no_proxy="$NO_PROXY"
 if [[ "$MODE" == "hybrid" ]]; then
-  exec "$PYTHON_BIN" -m d3d_sglang.hybrid "$@"
+  exec "$PYTHON_BIN" -m inference.sglang.hybrid "$@"
 fi
 if [[ "$MODE" == "draft" ]]; then
   export CUDA_VISIBLE_DEVICES="${DRAFT_GPU:-1}"
@@ -22,7 +22,7 @@ if [[ "$MODE" == "draft" ]]; then
   if [[ "${DETERMINISTIC:-0}" == "1" ]]; then
     DRAFT_EXTRA+=(--deterministic)
   fi
-  exec "$PYTHON_BIN" -m d3d_sglang.service \
+  exec "$PYTHON_BIN" -m inference.sglang.service \
     --model "$DRAFT_MODEL" --tokenizer "$TARGET_MODEL" --endpoint "$ENDPOINT" \
     --block-size "${BLOCK_SIZE:-16}" --anchors "${ANCHORS:-1}" \
     --max-branches "${MAX_BRANCHES:-$(( ${BLOCK_SIZE:-16} * ${ANCHORS:-1} ))}" \

@@ -1,6 +1,6 @@
 # Training and layer pruning
 
-Training code is in `train/`; progressive layer pruning is in `pruning/`.
+Training code is in `training/train/`; progressive layer pruning is in `training/pruning/`.
 The native environment is described in [environment.md](environment.md).
 
 Terms used below: the **target** is the verifier model; the **draft** is the
@@ -147,13 +147,13 @@ inference draft.
 
 | Path | Role |
 |:---|:---|
-| `train/train.py`, `train/trainer.py` | Distributed training entry point and loop |
-| `train/dataset.py`, `train/blocks.py` | Conversation loading and packed anchor-conditioned blocks |
-| `train/losses.py`, `train/objective_kernels.py` | Cross-entropy / Kullback-Leibler losses, position weighting, and auxiliary objectives |
-| `train/runtime.py`, `train/model_utils.py` | FSDP, checkpoint/code staging, and model helpers |
-| `train/trajectory.py` | Optional trajectory-distillation utilities; disabled by default |
-| `pruning/` | Layer selection, weight remapping, recovery, and validation |
-| `models/d3d_training/` | Qwen3-derived training model and checkpoint auto-map template |
-| `models/token_ids.py` | Checkpoint mask-token convention and validation |
+| `training/train/train.py`, `training/train/trainer.py` | Distributed training entry point and loop |
+| `training/train/dataset.py`, `training/train/blocks.py` | Conversation loading and packed anchor-conditioned blocks |
+| `training/train/losses.py`, `training/train/objective_kernels.py` | Cross-entropy / Kullback-Leibler losses, position weighting, and auxiliary objectives |
+| `training/train/runtime.py`, `training/train/model_utils.py` | FSDP, checkpoint/code staging, and model helpers |
+| `training/train/trajectory.py` | Optional trajectory-distillation utilities; disabled by default |
+| `training/pruning/` | Layer selection, weight remapping, recovery, and validation |
+| `training/model/` | Qwen3-derived training model and checkpoint auto-map template |
+| `common/token_ids.py` | Checkpoint mask-token convention and validation |
 
 Qwen and Hugging Face attribution is preserved in the imported model files.
