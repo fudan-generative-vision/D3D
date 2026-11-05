@@ -125,27 +125,6 @@ bash scripts/quickstart_concurrent.sh \
 
 </details>
 
-<details>
-<summary><strong>常用配置项</strong></summary>
-
-脚本把默认值当参数传给入口，命令行上追加的参数优先。只剩少数环境变量：
-
-| 变量 | 作用 | 默认值 |
-|:---|:---|:---|
-| `TARGET_MODEL` | 所有脚本使用的目标验证模型 | `Qwen/Qwen3-8B` |
-| `DRAFT_MODEL` | 所有脚本使用的草稿 checkpoint | `fudan-generative-ai/D3D-1.7B-8B` |
-| `DATASETS` | 两个 benchmark 脚本的数据集列表 | 七个标准数据集 |
-| `CONCURRENCY` | quick start 的请求数，或并发 benchmark 的扫描列表 | `4` / `1 4 8 16` |
-| `D3D_DATA_CACHE` | 可选的本地 jsonl 数据集缓存 | `data_cache/` |
-
-其余都是命令行参数，例如 `--max-samples`、`--max-new-tokens`、`--block-size`、
-`--anchor-num`、`--pages`、`--no-baseline`。
-
-单请求的完整参数用 `python single/eval_async_packed.py --help` 查看，并发用
-`python -m serving.bench --help`。
-
-</details>
-
 <a id="benchmarking"></a>
 
 ## 📊 性能基准

@@ -128,28 +128,6 @@ bash scripts/quickstart_concurrent.sh \
 
 </details>
 
-<details>
-<summary><strong>Useful configuration options</strong></summary>
-
-Scripts pass their defaults as flags, and anything appended on the command line
-wins. Only a few environment variables remain:
-
-| Variable | Purpose | Default |
-|:---|:---|:---|
-| `TARGET_MODEL` | Target verifier used by every script | `Qwen/Qwen3-8B` |
-| `DRAFT_MODEL` | Draft checkpoint used by every script | `fudan-generative-ai/D3D-1.7B-8B` |
-| `DATASETS` | Dataset list for the two benchmark scripts | the seven benchmarks |
-| `CONCURRENCY` | Quick-start request count, or benchmark sweep list | `4` / `1 4 8 16` |
-| `D3D_DATA_CACHE` | Optional existing jsonl dataset cache | `data_cache/` |
-
-Everything else is a flag, for example `--max-samples`, `--max-new-tokens`,
-`--block-size`, `--anchor-num`, `--pages` or `--no-baseline`.
-
-Use `python single/eval_async_packed.py --help` or
-`python -m serving.bench --help` for the full set of options.
-
-</details>
-
 <a id="benchmarking"></a>
 
 ## 📊 Benchmarking
