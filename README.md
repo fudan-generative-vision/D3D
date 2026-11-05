@@ -144,11 +144,8 @@ Run concurrent evaluation at request concurrency 1, 4, 8, and 16:
 bash scripts/benchmark_concurrent.sh
 ```
 
-Datasets are downloaded at runtime, not bundled in this repository.
-LiveCodeBench v6 uses `test6.jsonl` from
-`livecodebench/code_generation_lite`; the other datasets use `datasets`.
-See the [benchmark protocol](benchmarks/README.md) for sources, splits,
-token caps, timing boundaries, and reporting rules.
+Datasets are downloaded at runtime. See the
+[benchmark protocol](benchmarks/README.md) for sources and splits.
 
 ## ⚙️ Inference Engine Support
 

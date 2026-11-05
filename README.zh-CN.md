@@ -141,9 +141,7 @@ bash scripts/benchmark.sh
 bash scripts/benchmark_concurrent.sh
 ```
 
-数据集在运行时下载，不随仓库分发。LiveCodeBench v6 使用
-`livecodebench/code_generation_lite` 的 `test6.jsonl`，其余数据集使用
-`datasets`。来源、split、token 上限、计时边界与上报规则见
+评测数据在运行时下载。来源与 split 见
 [benchmark 协议](benchmarks/README.md)。
 
 ## ⚙️ 推理引擎支持
