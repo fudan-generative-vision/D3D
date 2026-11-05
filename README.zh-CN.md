@@ -58,8 +58,7 @@
 
 训练、层剪枝与原生推理统一使用 **PyTorch 2.8.0**、**Transformers 4.57.3**、
 **FlashAttention 2.8.3** 与 **CUDA 12.8**；支持 Python 3.10+。验证使用 Python
-3.12 和两张 NVIDIA H800 80 GB；依赖版本与检查项见
-[environment.md](docs/environment.md)。
+3.12 和两张 NVIDIA H800 80 GB；见 [environment.md](docs/environment.md)。
 
 ```bash
 git clone https://github.com/fudan-generative-vision/D3D.git
@@ -85,14 +84,9 @@ export TARGET_MODEL=Qwen/Qwen3-8B
 export DRAFT_MODEL=fudan-generative-ai/D3D-1.7B-8B
 ```
 
-目标模型运行在 `cuda:0`，草稿模型运行在 `cuda:1`。模型 ID 也接受本地
-checkpoint 目录。下载公开模型不需要 Hugging Face token。
+目标模型运行在 `cuda:0`，草稿模型运行在 `cuda:1`。
 
 ### 2. 运行异步解码
-
-每个脚本都会把多余参数透传给对应的 Python 入口，因此优先用命令行参数，
-少用环境变量。单请求脚本用 `--verifier` / `--drafter`，并发脚本用
-`--target` / `--draft`。
 
 **单请求** —— 一条 MATH-500 样本，最多生成 128 个 token：
 

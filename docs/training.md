@@ -156,5 +156,4 @@ inference draft.
 | `models/d3d_training/` | Qwen3-derived training model and checkpoint auto-map template |
 | `models/token_ids.py` | Checkpoint mask-token convention and validation |
 
-Qwen and Hugging Face attribution is preserved in the imported model files; see
-[third-party notices](../THIRD_PARTY_NOTICES.md).
+Qwen and Hugging Face attribution is preserved in the imported model files.

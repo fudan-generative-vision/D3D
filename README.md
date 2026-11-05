@@ -61,8 +61,7 @@ pruning; `24D` and `31D` denote the retained transformer-layer counts.
 Training, layer pruning, and native inference share **PyTorch 2.8.0**,
 **Transformers 4.57.3**, **FlashAttention 2.8.3**, and **CUDA 12.8**.
 Python 3.10+ is supported. Validation used Python 3.12 and two NVIDIA H800
-80 GB GPUs; see [environment.md](docs/environment.md) for package versions and
-checks.
+80 GB GPUs; see [environment.md](docs/environment.md).
 
 ```bash
 git clone https://github.com/fudan-generative-vision/D3D.git
@@ -88,15 +87,9 @@ export TARGET_MODEL=Qwen/Qwen3-8B
 export DRAFT_MODEL=fudan-generative-ai/D3D-1.7B-8B
 ```
 
-The target runs on `cuda:0`, and the draft runs on `cuda:1`. Model IDs also
-accept local checkpoint directories. Public model downloads do not require
-a Hugging Face token.
+The target runs on `cuda:0`, and the draft runs on `cuda:1`.
 
 ### 2. Run asynchronous decoding
-
-Every script forwards extra flags to its Python entry point, so prefer command
-line options over environment variables. Single-request scripts take
-`--verifier` / `--drafter`; concurrent scripts take `--target` / `--draft`.
 
 **Single request** — one MATH-500 sample, up to 128 generated tokens:
 
