@@ -18,15 +18,12 @@
 ## ✨ Overview
 
 **D3D** decouples a diffusion **draft model** from the **target verifier** on
-separate GPUs. Draft generation overlaps target verification, with verification
-feedback selecting reusable candidates for the next decoding step.
-
-| Asynchronous execution | Parallel diffusion drafts |
-|:---|:---|
-| Drafting and verification run on separate GPUs. | Block-wise candidate generation with packed outcomes. |
+separate GPUs. While the target verifies a draft block, the draft prepares
+continuations for several possible verification outcomes. The target's result
+then selects the matching continuation for the next decoding step.
 
 <p align="center">
-  <img src="docs/figure1.png" alt="D3D method overview: drafter training, progressive layer pruning, and asynchronous inference" width="960">
+  <img src="docs/architecture.png" alt="D3D method overview: drafter training, progressive layer pruning, and asynchronous inference" width="960">
 </p>
 
 **How it works:** a target-selected anchor starts a parallel diffusion draft;
@@ -40,10 +37,10 @@ See the [architecture guide](docs/architecture.md) for the execution flow.
 
 **[Browse the D3D collection →](https://huggingface.co/collections/fudan-generative-ai/d3d)**
 
-Six Qwen3-derived draft checkpoints are grouped in the
-[D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d).
-These are **draft models**, not replacements for the target models. `p` denotes
-pruning; `24D` and `31D` denote the retained transformer-layer counts.
+The [D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d)
+contains six Qwen3-derived draft checkpoints. These checkpoints are **draft
+models**, not replacements for their target models. `p` denotes pruning; `24D`
+and `31D` denote retained transformer-layer counts.
 
 | Target verifier | Draft family | Layers | D3D checkpoint |
 |:---|:---|:---:|:---|
@@ -57,11 +54,6 @@ pruning; `24D` and `31D` denote the retained transformer-layer counts.
 <a id="installation"></a>
 
 ## 📦 Installation
-
-Training, layer pruning, and native inference share **PyTorch 2.8.0**,
-**Transformers 4.57.3**, **FlashAttention 2.8.3**, and **CUDA 12.8**.
-Python 3.10+ is supported. Validation used Python 3.12 and two NVIDIA H800
-80 GB GPUs; see [environment.md](docs/environment.md).
 
 ```bash
 git clone https://github.com/fudan-generative-vision/D3D.git

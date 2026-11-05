@@ -27,19 +27,8 @@ Each repository contains:
 - a model card, license, and `release_metadata.json`;
 - inference compatibility classes and an `AutoModelForCausalLM` mapping.
 
-Training FSDP files, optimizer state, recovery manifests, logs, and datasets are
-not included.
-
 ## Loading
 
 Use the D3D entry points. They load the Hub snapshot through local compatibility
 classes with remote code execution disabled. Hub-hosted Python is provided for
 architecture inspection; arbitrary Transformers versions are not supported.
-
-## Validation
-
-Release checks cover repository access, shard completeness, weight sizes and
-hashes, configuration dimensions, and tokenizer loading. They do not establish
-generation quality or throughput for every checkpoint. To reproduce a result,
-record the Hub commit SHA, dataset samples, token cap, attention backend, and
-decoding configuration.

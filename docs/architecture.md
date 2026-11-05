@@ -5,6 +5,10 @@ draft runs on one GPU; the target model verifies draft tokens and supplies
 anchors on another GPU. The draft generates masked token blocks, while the
 target remains autoregressive.
 
+<p align="center">
+  <img src="architecture.png" alt="D3D method overview: drafter training, progressive layer pruning, and asynchronous inference" width="960">
+</p>
+
 ## Terms
 
 | Term | Definition |

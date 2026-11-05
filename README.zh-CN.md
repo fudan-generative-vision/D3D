@@ -17,15 +17,12 @@
 
 ## ✨ 概览
 
-**D3D** 把扩散**草稿模型**与**目标验证模型**解耦到不同的 GPU 上。草稿生成
-与目标验证相互重叠，并由验证反馈挑选下一步可复用的候选。
-
-| 异步执行 | 并行扩散草稿 |
-|:---|:---|
-| 起草与验证分别运行在不同的 GPU 上。 | 按块生成候选，并打包多种接受结果。 |
+**D3D** 把扩散**草稿模型**与**目标验证模型**解耦到不同的 GPU 上。目标模型
+验证当前草稿块时，草稿模型会针对多种可能的验证结果预先准备后续候选；验证
+完成后，系统直接复用与结果匹配的候选进入下一步。
 
 <p align="center">
-  <img src="docs/figure1.png" alt="D3D 方法总览：草稿训练、渐进式层剪枝与异步推理" width="960">
+  <img src="docs/architecture.png" alt="D3D 方法总览：草稿训练、渐进式层剪枝与异步推理" width="960">
 </p>
 
 **工作方式：** 目标模型选出的 anchor 触发一次并行扩散起草；在草稿 GPU 准备
@@ -38,10 +35,10 @@
 
 **[浏览 D3D 合集 →](https://huggingface.co/collections/fudan-generative-ai/d3d)**
 
-六个 Qwen3 派生的草稿 checkpoint 收录在
-[D3D 合集](https://huggingface.co/collections/fudan-generative-ai/d3d)中。
-它们是**草稿模型**，不是目标模型的替代品。名称中的 `p` 表示剪枝，`24D` 与
-`31D` 表示保留的 transformer 层数。
+[D3D 合集](https://huggingface.co/collections/fudan-generative-ai/d3d)包含
+六个 Qwen3 派生的草稿 checkpoint。这些 checkpoint 是**草稿模型**，不替代
+对应的目标模型。名称中的 `p` 表示剪枝，`24D` 与 `31D` 表示保留的
+transformer 层数。
 
 | 目标验证模型 | 草稿系列 | 层数 | D3D checkpoint |
 |:---|:---|:---:|:---|
@@ -55,10 +52,6 @@
 <a id="installation"></a>
 
 ## 📦 安装
-
-训练、层剪枝与原生推理统一使用 **PyTorch 2.8.0**、**Transformers 4.57.3**、
-**FlashAttention 2.8.3** 与 **CUDA 12.8**；支持 Python 3.10+。验证使用 Python
-3.12 和两张 NVIDIA H800 80 GB；见 [environment.md](docs/environment.md)。
 
 ```bash
 git clone https://github.com/fudan-generative-vision/D3D.git
