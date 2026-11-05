@@ -10,6 +10,8 @@ dist/
 
 outputs/
 checkpoints/
+datasets/
+pretrained_models/
 wandb/
 results/
 results*/

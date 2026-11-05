@@ -2,20 +2,15 @@
   <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
-<h1 align="center">D3D</h1>
-
-<h3 align="center">Decoupled Diffusion Drafting for Asynchronous Speculative Decoding</h3>
+<h1 align="center">D3D: Decoupled Diffusion Drafting for Asynchronous Speculative Decoding</h1>
 
 <p align="center">
-  <strong>扩散草稿，目标验证，D3D 让两者重叠。</strong><br>
-  解耦的 draft-and-verify 架构，草稿模型为 Qwen3 派生的扩散模型。
-</p>
-
-<p align="center">
-  <a href="https://huggingface.co/collections/fudan-generative-ai/d3d-6ae71f370a3f3b48ff8e4d15"><img src="https://img.shields.io/badge/%E6%A8%A1%E5%9E%8B-D3D_Collection-fbbf24?style=flat-square" alt="D3D 模型合集"></a>
+  <a href="https://huggingface.co/collections/fudan-generative-ai/d3d"><img src="https://img.shields.io/badge/%E5%90%88%E9%9B%86-D3D-fbbf24?style=flat-square" alt="D3D 合集"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B-%E5%BC%80%E5%A7%8B%E4%BD%BF%E7%94%A8-22c55e?style=flat-square" alt="快速开始"></a>
+  <a href="https://arxiv.org/abs/2611.06425"><img src="https://img.shields.io/badge/%E8%AE%BA%E6%96%87-arXiv%3A2611.06425-b31b1b?style=flat-square" alt="D3D 论文"></a>
   <a href="docs/architecture.md"><img src="https://img.shields.io/badge/%E6%9E%B6%E6%9E%84-%E6%96%87%E6%A1%A3-0ea5e9?style=flat-square" alt="架构文档"></a>
   <a href="#benchmarking"><img src="https://img.shields.io/badge/%E5%9F%BA%E5%87%86-%E5%8D%8F%E8%AE%AE-f97316?style=flat-square" alt="基准协议"></a>
+  <a href="#training-data"><img src="https://img.shields.io/badge/%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE-%E5%B7%B2%E5%8F%91%E5%B8%83-8b5cf6?style=flat-square" alt="训练数据"></a>
 </p>
 
 <a id="overview"></a>
@@ -24,9 +19,6 @@
 
 **D3D** 把扩散**草稿模型**与**目标验证模型**解耦到不同的 GPU 上。草稿生成
 与目标验证相互重叠，并由验证反馈挑选下一步可复用的候选。
-
-**本项目的贡献是 D3D 的执行架构：** 独立起草、重叠验证，以及由验证反馈
-驱动的候选复用。
 
 | 异步执行 | 并行扩散草稿 |
 |:---|:---|
@@ -44,11 +36,12 @@
 
 ## 🤗 模型仓库
 
-**[浏览 D3D 合集 →](https://huggingface.co/collections/fudan-generative-ai/d3d-6ae71f370a3f3b48ff8e4d15)**
+**[浏览 D3D 合集 →](https://huggingface.co/collections/fudan-generative-ai/d3d)**
 
-六个 Qwen3 派生的草稿 checkpoint 收录在 **fudan-generative-ai / D3D** 合集中。它们是
-**草稿模型**，不是目标模型的替代品。名称中的 `p` 表示剪枝，`24D` 与 `31D`
-表示保留的 transformer 层数。
+六个 Qwen3 派生的草稿 checkpoint 收录在
+[D3D 合集](https://huggingface.co/collections/fudan-generative-ai/d3d)中。
+它们是**草稿模型**，不是目标模型的替代品。名称中的 `p` 表示剪枝，`24D` 与
+`31D` 表示保留的 transformer 层数。
 
 | 目标验证模型 | 草稿系列 | 层数 | D3D checkpoint |
 |:---|:---|:---:|:---|
@@ -59,21 +52,17 @@
 | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B) | 8B | 36 | [D3D-8B-32B](https://huggingface.co/fudan-generative-ai/D3D-8B-32B) |
 | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B) | 剪枝 1.7B | 24 | [D3D-24D-p1.7B-32B](https://huggingface.co/fudan-generative-ai/D3D-24D-p1.7B-32B) |
 
-> checkpoint 保留原始 FP32 张量，推理时使用 BF16。每个 Hub 仓库包含
-> tokenizer 资源、推理兼容代码、model card 与发布元数据。名称中的系列规模
-> 不是剪枝后的精确参数量。精确的来源 step、张量数量与发布兼容性说明见
-> [checkpoint 详情](docs/models.md)。
-
 <a id="installation"></a>
 
 ## 📦 安装
 
-训练、层剪枝与原生单请求/并发推理统一使用 **PyTorch 2.8.0**、
-**Transformers 4.57.3**、**FlashAttention 2.8.3** 与 **CUDA 12.8**；
-支持 Python 3.10+，统一环境的本地 GPU 验证使用 Python 3.12 和两张 NVIDIA H800 80 GB。
+训练、层剪枝与原生推理统一使用 **PyTorch 2.8.0**、**Transformers 4.57.3**、
+**FlashAttention 2.8.3** 与 **CUDA 12.8**；支持 Python 3.10+。验证使用 Python
+3.12 和两张 NVIDIA H800 80 GB；依赖版本与检查项见
+[environment.md](docs/environment.md)。
 
 ```bash
-git clone https://github.com/linguancong524/D3D.git
+git clone https://github.com/fudan-generative-vision/D3D.git
 cd D3D
 python -m venv .venv
 source .venv/bin/activate
@@ -82,16 +71,11 @@ pip install flash-attn==2.8.3 --no-build-isolation
 pip install -e . --no-deps
 ```
 
-先安装 PyTorch，再编译 FlashAttention。也可以使用匹配的预编译 wheel；
-源码编译需要 CUDA toolkit、C++ 编译器以及足够的主机内存。并发后端依赖
-FlashAttention。
-可选 SGLang 后端仍使用单独锁定的环境，请勿将其 runtime lock 安装到该环境中。
-
 <a id="quick-start"></a>
 
 ## 🚀 快速开始
 
-### 1. 选择 target / draft 组合
+### 1. 目标模型与草稿模型配置
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1
@@ -158,7 +142,7 @@ bash scripts/quickstart_concurrent.sh \
 | `DRAFT_MODEL` | 所有脚本使用的草稿 checkpoint | `fudan-generative-ai/D3D-1.7B-8B` |
 | `DATASETS` | 两个 benchmark 脚本的数据集列表 | 七个标准数据集 |
 | `CONCURRENCY` | quick start 的请求数，或并发 benchmark 的扫描列表 | `4` / `1 4 8 16` |
-| `D3D_DATA_CACHE` | 可选的本地 JSONL 数据集缓存 | `data_cache/` |
+| `D3D_DATA_CACHE` | 可选的本地 jsonl 数据集缓存 | `data_cache/` |
 
 其余都是命令行参数，例如 `--max-samples`、`--max-new-tokens`、`--block-size`、
 `--anchor-num`、`--pages`、`--no-baseline`。
@@ -191,7 +175,8 @@ bash scripts/benchmark_concurrent.sh
 
 ## ⚙️ 推理引擎支持
 
-仓库支持原生 D3D 推理，也提供可选的双卡 SGLang Hybrid 后端。请单独安装：
+仓库支持原生 D3D 推理，也提供可选的双卡 SGLang Hybrid 后端。
+部署方式见 [SGLang backend](docs/sglang-backend.md)。请单独安装：
 
 ```bash
 bash scripts/sglang/install.sh
@@ -230,7 +215,7 @@ export TARGET_MODEL=Qwen/Qwen3-8B
 D3D-1.7B → Qwen3-8B，单并发，`anchor_num=1`，block size 16，
 `max_new_tokens=512`，贪心解码，关闭 thinking，EOS 正常生效。
 
-| 数据集 | TPS（speedup） |
+| 数据集 | tokens/s（speedup） |
 |---|---:|
 | GSM8K | 658.10 (4.876×) |
 | MATH-500 | 572.66 (4.243×) |
@@ -241,8 +226,27 @@ D3D-1.7B → Qwen3-8B，单并发，`anchor_num=1`，block size 16，
 | MT-Bench | 258.54 (1.916×) |
 | **合并统计** | **501.60 (3.717×)** |
 
-Hybrid 使用两张 H800，AR 使用一张；TPS 包含 prefill 和生成，
-不计模型启动、分词与预热。表中是吞吐结果，不代表答案质量评分。
+<a id="training-data"></a>
+
+## 📚 训练数据
+
+所有语料均使用 [Open-PerfectBlend](https://huggingface.co/datasets/mlabonne/open-perfectblend)
+的 prompt。生成参数、统计信息与下载方式见各数据集的 dataset card。已发布的模型和数据集
+见 [D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d)。
+
+| 语料 | Target Model | Samples | 数据集 |
+|:---|:---|---:|:---|
+| **PerfectBlend: Qwen3.8-27B Thinking** | [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | 1,417,675 | [PerfectBlend-Qwen3.8-27B-Thinking](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3.8-27B-Thinking) |
+| **PerfectBlend: Qwen3-4B Thinking (Greedy)** | [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B) | 1,420,909 | [PerfectBlend-Qwen3-4B-Thinking-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-4B-Thinking-Greedy) |
+| **PerfectBlend: Qwen3-4B NoThink (Greedy)** | [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B) | 1,420,908 | [PerfectBlend-Qwen3-4B-NoThink-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-4B-NoThink-Greedy) |
+| **PerfectBlend: Qwen3-4B NoThink (Sampling)** | [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B) | 1,420,909 | [PerfectBlend-Qwen3-4B-NoThink-Sampling](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-4B-NoThink-Sampling) |
+| **PerfectBlend: Qwen3-8B NoThink (Greedy)** | [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) | 1,420,908 | [PerfectBlend-Qwen3-8B-NoThink-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-8B-NoThink-Greedy) |
+| **PerfectBlend: Qwen3-8B NoThink (Sampling)** | [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) | 1,420,909 | [PerfectBlend-Qwen3-8B-NoThink-Sampling](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-8B-NoThink-Sampling) |
+| **PerfectBlend: Qwen3-32B NoThink (Sampling)** | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B) | 1,420,500 | [PerfectBlend-Qwen3-32B-NoThink-Sampling](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-32B-NoThink-Sampling) |
+| **PerfectBlend: Gemma-4-12B-IT (Greedy)** | [Gemma-4-12B-IT](https://huggingface.co/google/gemma-4-12B-it) | 1,420,898 | [PerfectBlend-Gemma-4-12B-IT-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Gemma-4-12B-IT-Greedy) |
+| **PerfectBlend: Gemma-4-31B-IT (Greedy)** | [Gemma-4-31B-IT](https://huggingface.co/google/gemma-4-31B-it) | 1,420,903 | [PerfectBlend-Gemma-4-31B-IT-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Gemma-4-31B-IT-Greedy) |
+
+每个语料对应其列出的模型；训练时请使用匹配的 tokenizer。
 
 ## 🏋️ 训练与层剪枝
 
@@ -259,27 +263,18 @@ CUDA_VISIBLE_DEVICES=0,1 NUM_GPUS=2 bash scripts/train.sh \
     --attn-implementation sdpa --disable-wandb
 ```
 
-请先下载初始模型并准备 JSONL 数据。安装方法、数据格式、损失设置与四阶段剪枝命令见
+请先下载初始模型并准备 jsonl 数据。安装方法、数据格式、损失设置与四阶段剪枝命令见
 [训练与渐进式剪枝指南](docs/training.md)。
 
-## 🗂️ 仓库结构
+## 引用
 
-```text
-single/       单请求异步 draft-and-verify 解码
-serving/      并发解码、paged KV cache 与 AR baseline
-models/d3d/   Qwen3 派生的 D3D 草稿骨干与兼容代码
-models/d3d_training/  训练专用模型实现（共用依赖环境）
-train/        基于 target 生成回答 token 的离线训练
-pruning/      层选择、物理剪枝、恢复训练与 checkpoint 选择
-common/       共享工具：设备、checkpoint、数据集、文本、指标
-scripts/      quick start、smoke check 与 benchmark 入口
-benchmarks/   数据集来源与评测协议
-docs/         架构、模型细节与验证说明
-tests/        模型加载、发布与指标核算测试
+如果使用 D3D，请引用：
+
+```bibtex
+@article{chen2026d3d,
+  title   = {D3D: Decoupled Diffusion Drafting for Asynchronous Speculative Decoding},
+  author  = {Baoyou Chen and Ruiqiao Mei and Guancong Lin and Tao Song and Weihao Yuan and Qun Liu and Siyu Zhu},
+  journal = {arXiv preprint arXiv:2611.06425},
+  year    = {2026}
+}
 ```
-
-## 引用与许可
-
-D3D 自有代码以 [MIT 许可证](LICENSE)发布。包含的第三方代码与 Qwen 派生权重
-沿用各自的条款，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 以及各个
-model card。

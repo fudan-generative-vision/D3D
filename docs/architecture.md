@@ -1,52 +1,57 @@
-# D3D architecture
+# Architecture
 
-**D3D is the draft-and-verify execution architecture. Qwen3 supplies the
-transformer backbone.** The draft runs with diffusion-style masked blocks;
-the target retains its autoregressive verification role. Sharing a backbone
-does not make standard Qwen3 generation a substitute for D3D drafting.
+D3D is a draft-and-verify decoding architecture. A Qwen3-derived diffusion
+draft runs on one GPU; the target model verifies draft tokens and supplies
+anchors on another GPU. The draft generates masked token blocks, while the
+target remains autoregressive.
 
-<p align="center">
-  <img src="figure1.png" alt="D3D method overview: drafter training, progressive layer pruning, and asynchronous inference" width="960">
-</p>
+## Terms
 
-## Three cooperating components
+| Term | Definition |
+|:---|:---|
+| Target | The autoregressive model whose output distribution is being approximated. |
+| Draft | The Qwen3-derived diffusion model that proposes tokens. |
+| Anchor | A target-selected token that conditions the next draft block. |
+| Block | A group of draft tokens generated in one diffusion step. |
+| Packed candidates | Multiple draft continuations generated for possible verification outcomes. |
+| KV cache | Cached key and value tensors used for autoregressive decoding. |
+| EOS | End-of-sequence token. |
+| Accept length | Mean number of tokens committed per target verification step. |
 
-| Component | Responsibility | Implementation |
-|:---|:---|:---|
-| Diffusion draft · GPU 1 | Generate blocks and packed continuation candidates | `models/d3d/`, `single/eval_async_packed.py` |
-| Target verifier · GPU 0 | Verify pending drafts and provide correction/anchor tokens | `single/eval_sync.py`, `serving/backend.py` |
-| Coordinator | Commit accepted tokens and select reusable candidates using target feedback | `single/eval_async_packed.py`, `serving/engine.py` |
+## Components
+
+| Component | GPU | Responsibility | Code |
+|:---|:---:|:---|:---|
+| Diffusion draft | 1 | Generate blocks and packed continuation candidates | `models/d3d/`, `single/eval_async_packed.py` |
+| Target verifier | 0 | Verify pending drafts and provide anchor tokens | `single/eval_sync.py`, `serving/backend.py` |
+| Coordinator | both | Commit accepted tokens and select reusable candidates from verification feedback | `single/eval_async_packed.py`, `serving/engine.py` |
 
 ## Decode cycle
 
-1. Prefill the prompt and obtain an anchor token from the target.
-2. Generate a masked draft block conditioned on that anchor.
-3. Submit the pending block to target verification. While verification runs,
-   prepare packed candidates for possible acceptance positions and anchors.
-4. Commit the accepted prefix and target-selected token, then select a matching
-   candidate. Recover a draft when the required candidate is unavailable.
-5. Repeat until the stopping condition or output-token limit is reached.
+1. Prefill the prompt and obtain an anchor from the target.
+2. Generate a masked draft block conditioned on the anchor.
+3. Send the pending block to the target for verification. While verification
+   runs, prepare packed candidates for possible acceptance positions and anchors.
+4. Commit the accepted prefix and the target-selected token, then reuse a
+   matching candidate. If no candidate matches, generate a new draft.
+5. Repeat until EOS or the output-token limit.
 
-The two GPUs perform independent work; verification feedback decides what can
-be reused. The architecture diagram is schematic, not a measured timeline.
+Drafting and verification run concurrently on separate GPUs. Verification
+feedback determines which candidate can be reused.
 
-## One architecture, two execution paths
+## Execution paths
 
 | Path | Entry point | Cache and scheduling |
 |:---|:---|:---|
 | Single request | `single/eval_async_packed.py` | Per-request draft and target caches |
-| Concurrent requests | `python -m serving.bench` | Paged KV caches, strict request admission, draft microbatches |
+| Concurrent requests | `python -m serving.bench` | Paged KV caches, request admission, draft microbatches |
 
-`models/d3d/configuration_d3d.py` and `modeling_d3d.py` expose `D3DConfig`,
-`D3DModel`, and `D3DForCausalLM`. Transformer parameter names and arithmetic
-are unchanged by the public naming cleanup. The local loader accepts both
-the new D3D type and legacy draft type tags, without executing Hub-hosted Python.
+`models/d3d/configuration_d3d.py` and `modeling_d3d.py` define `D3DConfig`,
+`D3DModel`, and `D3DForCausalLM`. The loader accepts both D3D and legacy draft
+type tags without executing Hub-hosted Python.
 
-## What this release does not claim
+## Scope
 
-The repository does not rebrand Qwen3 as an originally invented transformer
-backbone. Upstream source notices remain in the model files and
-[third-party notices](../THIRD_PARTY_NOTICES.md). Published checkpoints are
-drafts paired with specific target models, not standalone target replacements.
-No performance number follows from the diagram or from renaming the code;
-see the [benchmark protocol](../benchmarks/README.md).
+Released checkpoints are draft models paired with specific target models. They
+are not replacements for the target models. Throughput depends on the model
+pair, workload, and hardware; see the [benchmark protocol](../benchmarks/README.md).

@@ -1,9 +1,9 @@
-# Released draft checkpoints
+# Released checkpoints
 
-All six checkpoints are grouped in the public
-[fudan-generative-ai / D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d-6ae71f370a3f3b48ff8e4d15).
+All six checkpoints are grouped with the training datasets in the
+[D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d).
 
-| Hub repository | Target | Layers | Tensor parameters | Weight bytes |
+| Hub repository | Target | Layers | Tensor parameters | FP32 weight bytes |
 |:---|:---|---:|---:|---:|
 | [D3D-1.7B-8B](https://huggingface.co/fudan-generative-ai/D3D-1.7B-8B) | Qwen3-8B | 28 | 2,031,739,904 | 8,126,995,168 |
 | [D3D-1.7B-32B](https://huggingface.co/fudan-generative-ai/D3D-1.7B-32B) | Qwen3-32B | 28 | 2,031,739,904 | 8,126,995,168 |
@@ -12,56 +12,34 @@ All six checkpoints are grouped in the public
 | [D3D-24D-p1.7B-32B](https://huggingface.co/fudan-generative-ai/D3D-24D-p1.7B-32B) | Qwen3-32B | 24 | 1,830,395,904 | 7,321,613,968 |
 | [D3D-31D-p8B-8B](https://huggingface.co/fudan-generative-ai/D3D-31D-p8B-8B) | Qwen3-8B | 31 | 7,226,003,200 | 28,904,052,320 |
 
-Parameter counts sum the tensor shapes in the safetensors headers, including
-embedding and output tensors. Names describe the base architecture family, not
-the exact number of stored parameters. Byte counts include safetensors headers
-and refer to the original FP32 files, not BF16 GPU residency.
+Tensor parameters sum all tensor shapes in the safetensors headers, including
+embeddings and output heads. Names identify the architecture family, not the
+exact stored parameter count. Weight bytes refer to the original FP32 files,
+not BF16 GPU memory.
 
-## What is preserved
+## Contents
 
-- Original safetensors shards and their complete weight index.
-- Original tensor values and FP32 precision; no re-quantization or dtype conversion.
-- Tokenizer and generation assets present in the source checkpoint.
-- Architecture dimensions and retained-layer count.
+Each repository contains:
 
-## Packaging for inference
+- the original safetensors shards and weight index;
+- original FP32 tensor values;
+- tokenizer and generation assets;
+- a model card, license, and `release_metadata.json`;
+- inference compatibility classes and an `AutoModelForCausalLM` mapping.
 
-The release adds model cards, license text, and `release_metadata.json`.
-The original Hub packages include draft compatibility files and an inference
-`AutoModelForCausalLM` mapping rather than the training-time FSDP wrapper.
+Training FSDP files, optimizer state, recovery manifests, logs, and datasets are
+not included.
 
-The supported entry points are the D3D scripts. They resolve the Hub snapshot
-and load it through local compatibility classes with remote code execution
-disabled. Hub-hosted Python is included for architecture inspection and
-compatibility; arbitrary Transformers versions are not supported.
+## Loading
 
-Training-time FSDP implementation files, optimizer state, recovery manifests,
-evaluation logs, and local datasets are not uploaded.
+Use the D3D entry points. They load the Hub snapshot through local compatibility
+classes with remote code execution disabled. Hub-hosted Python is provided for
+architecture inspection; arbitrary Transformers versions are not supported.
 
-## Validation boundaries
+## Validation
 
-Publication checks cover public repository access, complete shard lists,
-weight sizes and hashes, configuration dimensions, and tokenizer loading.
-They do not establish generation quality, target-reference equivalence, or
-performance for all six released checkpoints. Local GPU smoke and reference
-checks have a narrower scope.
-
-To reproduce a result, record the Hub commit SHA in addition to the model ID,
-and use the same dataset samples, token cap, attention backend, and decoding
-configuration.
-
-## Maintain the collection
-
-Authenticate with a local write-scoped Hub credential, then run:
-
-```bash
-python scripts/organize_hub.py --dry-run
-python scripts/organize_hub.py --output docs/huggingface-collection.json
-```
-
-The helper reuses an existing D3D collection, checks that all six repositories
-are public, and adds missing items without duplicates or weight uploads.
-The collection's actual slug and model IDs are recorded in
-`huggingface-collection.json`. A Hub collection lives under `/collections/`;
-`fudan-generative-ai/D3D` here describes the owner and collection title, not a combined
-weight repository.
+Release checks cover repository access, shard completeness, weight sizes and
+hashes, configuration dimensions, and tokenizer loading. They do not establish
+generation quality or throughput for every checkpoint. To reproduce a result,
+record the Hub commit SHA, dataset samples, token cap, attention backend, and
+decoding configuration.

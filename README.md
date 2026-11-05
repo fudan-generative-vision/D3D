@@ -2,20 +2,15 @@
   <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
-<h1 align="center">D3D</h1>
-
-<h3 align="center">Decoupled Diffusion Drafting for Asynchronous Speculative Decoding</h3>
+<h1 align="center">D3D: Decoupled Diffusion Drafting for Asynchronous Speculative Decoding</h1>
 
 <p align="center">
-  <strong>Diffusion drafts. The target verifies. D3D overlaps both.</strong><br>
-  A decoupled draft-and-verify architecture, powered by Qwen3-derived diffusion drafts.
-</p>
-
-<p align="center">
-  <a href="https://huggingface.co/collections/fudan-generative-ai/d3d-6ae71f370a3f3b48ff8e4d15"><img src="https://img.shields.io/badge/Models-D3D_Collection-fbbf24?style=flat-square" alt="D3D model collection"></a>
+  <a href="https://huggingface.co/collections/fudan-generative-ai/d3d"><img src="https://img.shields.io/badge/Collection-D3D-fbbf24?style=flat-square" alt="D3D collection"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/Quick_Start-Get_started-22c55e?style=flat-square" alt="Quick start"></a>
+  <a href="https://arxiv.org/abs/2611.06425"><img src="https://img.shields.io/badge/Paper-arXiv%3A2611.06425-b31b1b?style=flat-square" alt="D3D paper"></a>
   <a href="docs/architecture.md"><img src="https://img.shields.io/badge/Architecture-Docs-0ea5e9?style=flat-square" alt="Architecture guide"></a>
   <a href="#benchmarking"><img src="https://img.shields.io/badge/Benchmarks-Protocol-f97316?style=flat-square" alt="Benchmark protocol"></a>
+  <a href="#training-data"><img src="https://img.shields.io/badge/Training_Data-Released-8b5cf6?style=flat-square" alt="Training data"></a>
 </p>
 
 <a id="overview"></a>
@@ -25,9 +20,6 @@
 **D3D** decouples a diffusion **draft model** from the **target verifier** on
 separate GPUs. Draft generation overlaps target verification, with verification
 feedback selecting reusable candidates for the next decoding step.
-
-**The contribution is the D3D execution architecture:** independent drafting,
-overlapped verification, and feedback-driven candidate reuse.
 
 | Asynchronous execution | Parallel diffusion drafts |
 |:---|:---|
@@ -46,11 +38,12 @@ See the [architecture guide](docs/architecture.md) for the execution flow.
 
 ## 🤗 Model Zoo
 
-**[Browse the D3D collection →](https://huggingface.co/collections/fudan-generative-ai/d3d-6ae71f370a3f3b48ff8e4d15)**
+**[Browse the D3D collection →](https://huggingface.co/collections/fudan-generative-ai/d3d)**
 
-Six Qwen3-derived draft checkpoints are grouped in **fudan-generative-ai / D3D**. These are
-**draft models**, not replacements for the target models. `p` denotes pruning;
-`24D` and `31D` denote the retained transformer-layer counts.
+Six Qwen3-derived draft checkpoints are grouped in the
+[D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d).
+These are **draft models**, not replacements for the target models. `p` denotes
+pruning; `24D` and `31D` denote the retained transformer-layer counts.
 
 | Target verifier | Draft family | Layers | D3D checkpoint |
 |:---|:---|:---:|:---|
@@ -61,23 +54,18 @@ Six Qwen3-derived draft checkpoints are grouped in **fudan-generative-ai / D3D**
 | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B) | 8B | 36 | [D3D-8B-32B](https://huggingface.co/fudan-generative-ai/D3D-8B-32B) |
 | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B) | Pruned 1.7B | 24 | [D3D-24D-p1.7B-32B](https://huggingface.co/fudan-generative-ai/D3D-24D-p1.7B-32B) |
 
-> Checkpoints retain their original FP32 tensors; inference uses BF16.
-> Each Hub repository includes tokenizer assets, inference compatibility code,
-> a model card, and release metadata. The family size in a name is not an exact
-> post-pruning parameter count. Exact source steps, tensor counts, and release
-> compatibility notes are in [checkpoint details](docs/models.md).
-
 <a id="installation"></a>
 
 ## 📦 Installation
 
-Training, layer pruning, and native single-request/concurrent inference share
-**PyTorch 2.8.0**, **Transformers 4.57.3**, **FlashAttention 2.8.3**, and
-**CUDA 12.8**. Python 3.10+ is supported; unified-environment GPU validation used
-Python 3.12 and two NVIDIA H800 80 GB GPUs.
+Training, layer pruning, and native inference share **PyTorch 2.8.0**,
+**Transformers 4.57.3**, **FlashAttention 2.8.3**, and **CUDA 12.8**.
+Python 3.10+ is supported. Validation used Python 3.12 and two NVIDIA H800
+80 GB GPUs; see [environment.md](docs/environment.md) for package versions and
+checks.
 
 ```bash
-git clone https://github.com/linguancong524/D3D.git
+git clone https://github.com/fudan-generative-vision/D3D.git
 cd D3D
 python -m venv .venv
 source .venv/bin/activate
@@ -86,17 +74,11 @@ pip install flash-attn==2.8.3 --no-build-isolation
 pip install -e . --no-deps
 ```
 
-Install PyTorch before building FlashAttention. A matching prebuilt wheel can
-be used instead; source builds need a CUDA toolkit, a C++ compiler, and
-sufficient host memory. The concurrent backend requires FlashAttention.
-The optional SGLang backend still requires its separately locked environment;
-do not install its runtime lock into this environment.
-
 <a id="quick-start"></a>
 
 ## 🚀 Quick Start
 
-### 1. Select a target / draft pair
+### 1. Target–draft configuration
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1
@@ -165,7 +147,7 @@ wins. Only a few environment variables remain:
 | `DRAFT_MODEL` | Draft checkpoint used by every script | `fudan-generative-ai/D3D-1.7B-8B` |
 | `DATASETS` | Dataset list for the two benchmark scripts | the seven benchmarks |
 | `CONCURRENCY` | Quick-start request count, or benchmark sweep list | `4` / `1 4 8 16` |
-| `D3D_DATA_CACHE` | Optional existing JSONL dataset cache | `data_cache/` |
+| `D3D_DATA_CACHE` | Optional existing jsonl dataset cache | `data_cache/` |
 
 Everything else is a flag, for example `--max-samples`, `--max-new-tokens`,
 `--block-size`, `--anchor-num`, `--pages` or `--no-baseline`.
@@ -199,8 +181,9 @@ token caps, timing boundaries, and reporting rules.
 
 ## ⚙️ Inference Engine Support
 
-The repository supports native D3D inference and an optional two-GPU
-SGLang Hybrid backend. Install SGLang separately:
+The repository supports native D3D inference and an optional two-GPU SGLang
+Hybrid backend. See the [SGLang backend guide](docs/sglang-backend.md).
+Install SGLang separately:
 
 ```bash
 bash scripts/sglang/install.sh
@@ -239,7 +222,7 @@ restart the backend after changing it.
 D3D-1.7B → Qwen3-8B, concurrency 1, `anchor_num=1`, block size 16,
 `max_new_tokens=512`, greedy decoding, thinking disabled, and natural EOS.
 
-| Dataset | TPS (speedup) |
+| Dataset | tokens/s (speedup) |
 |---|---:|
 | GSM8K | 658.10 (4.876×) |
 | MATH-500 | 572.66 (4.243×) |
@@ -250,9 +233,28 @@ D3D-1.7B → Qwen3-8B, concurrency 1, `anchor_num=1`, block size 16,
 | MT-Bench | 258.54 (1.916×) |
 | **Aggregate** | **501.60 (3.717×)** |
 
-Hybrid uses two H800 GPUs; AR uses one. TPS includes
-prefill and generation; startup, tokenization, and warmup are excluded.
-These are throughput results, not answer-quality scores.
+<a id="training-data"></a>
+
+## 📚 Training Data
+
+All corpora use [Open-PerfectBlend](https://huggingface.co/datasets/mlabonne/open-perfectblend)
+prompts. See each dataset card for generation settings, statistics, and download
+instructions. Released models and datasets are grouped in the
+[D3D collection](https://huggingface.co/collections/fudan-generative-ai/d3d).
+
+| Corpus | Target Model | Samples | Dataset |
+|:---|:---|---:|:---|
+| **PerfectBlend: Qwen3.8-27B Thinking** | [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | 1,417,675 | [PerfectBlend-Qwen3.8-27B-Thinking](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3.8-27B-Thinking) |
+| **PerfectBlend: Qwen3-4B Thinking (Greedy)** | [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B) | 1,420,909 | [PerfectBlend-Qwen3-4B-Thinking-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-4B-Thinking-Greedy) |
+| **PerfectBlend: Qwen3-4B NoThink (Greedy)** | [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B) | 1,420,908 | [PerfectBlend-Qwen3-4B-NoThink-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-4B-NoThink-Greedy) |
+| **PerfectBlend: Qwen3-4B NoThink (Sampling)** | [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B) | 1,420,909 | [PerfectBlend-Qwen3-4B-NoThink-Sampling](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-4B-NoThink-Sampling) |
+| **PerfectBlend: Qwen3-8B NoThink (Greedy)** | [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) | 1,420,908 | [PerfectBlend-Qwen3-8B-NoThink-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-8B-NoThink-Greedy) |
+| **PerfectBlend: Qwen3-8B NoThink (Sampling)** | [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) | 1,420,909 | [PerfectBlend-Qwen3-8B-NoThink-Sampling](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-8B-NoThink-Sampling) |
+| **PerfectBlend: Qwen3-32B NoThink (Sampling)** | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B) | 1,420,500 | [PerfectBlend-Qwen3-32B-NoThink-Sampling](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Qwen3-32B-NoThink-Sampling) |
+| **PerfectBlend: Gemma-4-12B-IT (Greedy)** | [Gemma-4-12B-IT](https://huggingface.co/google/gemma-4-12B-it) | 1,420,898 | [PerfectBlend-Gemma-4-12B-IT-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Gemma-4-12B-IT-Greedy) |
+| **PerfectBlend: Gemma-4-31B-IT (Greedy)** | [Gemma-4-31B-IT](https://huggingface.co/google/gemma-4-31B-it) | 1,420,903 | [PerfectBlend-Gemma-4-31B-IT-Greedy](https://huggingface.co/datasets/fudan-generative-ai/PerfectBlend-Gemma-4-31B-IT-Greedy) |
+
+Each corpus targets the listed model; use the matching tokenizer for training.
 
 ## 🏋️ Training and Layer Pruning
 
@@ -271,28 +273,19 @@ CUDA_VISIBLE_DEVICES=0,1 NUM_GPUS=2 bash scripts/train.sh \
     --attn-implementation sdpa --disable-wandb
 ```
 
-Download the initial checkpoints and prepare the JSONL dataset first. See the
+Download the initial checkpoints and prepare the jsonl dataset first. See the
 [training and progressive-pruning guide](docs/training.md) for installation,
 data schemas, loss settings, and all four pruning stages.
 
-## 🗂️ Repository Guide
+## Citation
 
-```text
-single/       Single-request asynchronous draft-and-verify decoding
-serving/      Concurrent decoding, paged KV cache, and AR baselines
-models/d3d/   Qwen3-derived D3D draft backbone and compatibility code
-models/d3d_training/  Training-specific model port (shared dependencies)
-train/        Offline training on target-generated response tokens
-pruning/      Layer selection, physical pruning, recovery, checkpoint selection
-common/       Shared helpers: devices, checkpoints, datasets, text, metrics
-scripts/      Quick starts, smoke checks, and benchmark entry points
-benchmarks/   Dataset sources and evaluation protocol
-docs/         Architecture, model details, and validation notes
-tests/        Model-loading, release, and metric-accounting checks
+If you use D3D, please cite:
+
+```bibtex
+@article{chen2026d3d,
+  title   = {D3D: Decoupled Diffusion Drafting for Asynchronous Speculative Decoding},
+  author  = {Baoyou Chen and Ruiqiao Mei and Guancong Lin and Tao Song and Weihao Yuan and Qun Liu and Siyu Zhu},
+  journal = {arXiv preprint arXiv:2611.06425},
+  year    = {2026}
+}
 ```
-
-## Citation & License
-
-D3D-authored code is released under the [MIT License](LICENSE). Included
-third-party code and Qwen-derived weights retain their own terms; see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the individual model cards.
