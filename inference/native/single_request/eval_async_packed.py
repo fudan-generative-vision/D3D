@@ -83,6 +83,16 @@ def _verifier_process_main(
             command = message["command"]
             if command == "close":
                 break
+            if command == "memory":
+                if message.get("reset", False):
+                    target_kv = None
+                    target_output = None
+                    _sync_device(device)
+                    torch.cuda.reset_peak_memory_stats(device)
+                _sync_device(device)
+                connection.send({"status": "ok", "peak_allocated_bytes": torch.cuda.max_memory_allocated(device),
+                                 "peak_reserved_bytes": torch.cuda.max_memory_reserved(device)})
+                continue
             if command == "prefill":
                 input_ids = torch.tensor(message["input_ids"], dtype=torch.long, device=device)
                 target_kv = DynamicCache()
@@ -332,6 +342,12 @@ class VerifierProcessClient:
             "round_trip_s": max(received_at - submitted_at, 0.0),
             },
         )
+
+    def memory_stats(self, *, reset: bool = False) -> dict[str, Any]:
+        if self._verify_submitted_at is not None:
+            raise RuntimeError("Memory query must occur between requests, not during verification")
+        self._connection.send({"command": "memory", "reset": bool(reset)})
+        return self._recv()
 
     def close(self) -> None:
         if self._process.is_alive():
@@ -816,6 +832,7 @@ def run_d3d_generate_async(
     attention_mask_mode: str = "block_causal",
     anchor_num: int = 0,
     packed_accepted_counts: tuple[int, ...] | None = None,
+    collect_round_timings: bool = False,
 ):
     if int(denoising_steps) != 1:
         raise ValueError("eval_async.py currently requires --denoising-steps 1")
@@ -946,6 +963,7 @@ def run_d3d_generate_async(
     packed_anchor_matches = 0
     packed_unanchored_candidates_generated = 0
     packed_unanchored_hits = 0
+    round_timings: list[dict[str, Any]] = []
 
     def draft_recovery(anchor, prefix_len: int):
         nonlocal draft_sync_time, redraft_gpu_time, sync_redraft_steps
@@ -1042,6 +1060,8 @@ def run_d3d_generate_async(
             async_ready_hits += 1
 
         overlap_start = time.perf_counter()
+        counters_before = (async_draft_time, async_draft_gpu_time, draft_sync_time, redraft_gpu_time,
+                           overlap_wall_time, wait_for_verify_time)
         verify_submit_wall_time += verifier_client.submit_verify(
             current_tokens,
             (
@@ -1161,6 +1181,26 @@ def run_d3d_generate_async(
         generated = output_ids[:, num_input_tokens : min(kv_len + 1, max_length)]
         stopped = contains_stop(generated, stop_token_ids)
         stopped_blocks.append(bool(stopped))
+        timing_row = None
+        if collect_round_timings:
+            timing_row = {
+                "round": len(acceptance_lengths), "source": current_source,
+                "verify_block_tokens": current_len, "committed_tokens": commit_len,
+                "verify_gpu_s": float(verify_metrics["gpu_s"]),
+                "packed_draft_gpu_s": async_draft_gpu_time - counters_before[1],
+                "packed_draft_wall_s": async_draft_time - counters_before[0],
+                "concurrent_region_wall_s": overlap_wall_time - counters_before[4],
+                "wait_for_verify_s": wait_for_verify_time - counters_before[5],
+                "dispatch_delay_s": float(verify_metrics["dispatch_delay_s"]),
+                "response_pipe_s": float(verify_metrics["response_pipe_s"]),
+                "next_branch_available": selected_outcome is not None,
+                "anchor_conditioned_match": selected_outcome is not None and candidate_key[1] is not None,
+                "full_accept_unanchored_reuse": selected_outcome is not None and all_pass,
+                "terminal": bool(stopped or kv_len >= max_length),
+                "redraft_wall_s": 0.0, "redraft_gpu_s": 0.0,
+                "round_wall_s": time.perf_counter() - overlap_start,
+            }
+            round_timings.append(timing_row)
         if stopped or kv_len >= max_length:
             break
 
@@ -1172,6 +1212,10 @@ def run_d3d_generate_async(
         else:
             current_tokens, current_top_tokens, current_probs = draft_recovery(anchor_target, kv_len)
             current_source = "redraft"
+        if timing_row is not None:
+            timing_row["redraft_wall_s"] = draft_sync_time - counters_before[2]
+            timing_row["redraft_gpu_s"] = redraft_gpu_time - counters_before[3]
+            timing_row["round_wall_s"] = time.perf_counter() - overlap_start
 
     output_ids = output_ids[:, : min(kv_len + 1, max_length)]
     output_ids = trim_at_stop(output_ids, num_input_tokens, stop_token_ids)
@@ -1192,6 +1236,7 @@ def run_d3d_generate_async(
         acceptance_lengths,
     )
     async_stats = {
+        "round_timings": round_timings,
         "mode": "process_two_gpu_all_positions_packed",
         "qwen35_rollback_mode": os.environ.get(
             "QWEN35_ROLLBACK_MODE", "replay"
@@ -1544,6 +1589,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     torch.manual_seed(args.seed)
     target_path = resolve_model_path(args.verifier)
     draft_path = resolve_model_path(args.drafter)
+    sync._check_target_cache_support(target_path)
     tokenizer_path = resolve_model_path(args.tokenizer) if args.tokenizer else target_path
     args.runtime = runtime_metadata({'target': target_path, 'draft': draft_path,
                                           'tokenizer': tokenizer_path})
@@ -1568,7 +1614,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "DRAFT_ATTN_IMPLEMENTATION", "flash_attention_2"
     )
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=False)
-    eos_ids = eos_token_ids(tokenizer, args.eos_token_id) or sync.STOP_TOKEN_IDS
+    sync.MASK_ID = sync._draft_mask_id(draft_path, tokenizer)
+    eos_ids = eos_token_ids(tokenizer, args.eos_token_id, model_path=target_path) or sync.STOP_TOKEN_IDS
 
     verifier_cpu_affinity = _parse_cpu_affinity(args.verifier_cpu_affinity)
     draft_cpu_affinity = _parse_cpu_affinity(args.draft_cpu_affinity)

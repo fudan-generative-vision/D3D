@@ -1,0 +1,47 @@
+schema_version: 1
+kind: h800_suite
+id: ssd_existing_ar
+datasets:
+- math500
+- humaneval
+- mt-bench
+max_new_tokens: 2048
+max_samples: null
+repeats: 3
+training_required: false
+interpretation: Use existing Qwen3-1.7B weights. SSD has no training. This official optimized backend
+  has its own TP1/TP2 baselines; do not describe it as a common-Transformers-kernel control.
+source: https://github.com/tanishqkumar/ssd
+cases:
+- id: Qwen3-8B_ssd_backend_tp1
+  method: ssd
+  mode: target-tp1
+  target: Qwen3-8B
+- id: Qwen3-8B_ssd_backend_tp2
+  method: ssd
+  mode: target-tp2
+  target: Qwen3-8B
+- id: Qwen3-8B_SSD_AR17
+  method: ssd
+  mode: async
+  target: Qwen3-8B
+  drafter: Qwen3-1.7B
+  drafter_source: models
+  lookahead: 15
+  fan_out: 2
+- id: Qwen3-32B_ssd_backend_tp1
+  method: ssd
+  mode: target-tp1
+  target: Qwen3-32B
+- id: Qwen3-32B_ssd_backend_tp2
+  method: ssd
+  mode: target-tp2
+  target: Qwen3-32B
+- id: Qwen3-32B_SSD_AR17
+  method: ssd
+  mode: async
+  target: Qwen3-32B
+  drafter: Qwen3-1.7B
+  drafter_source: models
+  lookahead: 15
+  fan_out: 2

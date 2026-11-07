@@ -1,6 +1,8 @@
 """Prompt formatting, stop-token, and token-list helpers."""
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any, Iterable
 
 import torch
@@ -18,7 +20,7 @@ def apply_chat_template(tokenizer: Any, messages: list[dict[str, Any]], enable_t
         return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
 
-def eos_token_ids(tokenizer: Any, explicit: list[int] | None) -> list[int]:
+def eos_token_ids(tokenizer: Any, explicit: list[int] | None, *, model_path=None) -> list[int]:
     values: list[int] = []
     eos = getattr(tokenizer, "eos_token_id", None)
     if isinstance(eos, int):
@@ -28,6 +30,14 @@ def eos_token_ids(tokenizer: Any, explicit: list[int] | None) -> list[int]:
     extra = getattr(tokenizer, "eos_token_ids", None)
     if isinstance(extra, (list, tuple)):
         values.extend(int(x) for x in extra)
+    if model_path is not None:
+        generation_path = Path(model_path) / "generation_config.json"
+        if generation_path.is_file():
+            saved = json.loads(generation_path.read_text()).get("eos_token_id")
+            if isinstance(saved, int):
+                values.append(saved)
+            elif isinstance(saved, list):
+                values.extend(saved)
     # Keep legacy shell-provided stop IDs for Qwen3 while also honoring a
     # newer verifier tokenizer (Qwen3.6 uses 248046/248044).
     if explicit:

@@ -1,0 +1,102 @@
+schema_version: 1
+kind: h800_suite
+id: existing_checkpoints
+datasets:
+- math500
+- humaneval
+- mt-bench
+max_samples: null
+max_new_tokens: 2048
+repeats: 3
+cases:
+- id: Qwen3-8B_tp1
+  method: target
+  target: Qwen3-8B
+  tp: 1
+- id: Qwen3-8B_tp2
+  method: target
+  target: Qwen3-8B
+  tp: 2
+- id: Qwen3-32B_tp1
+  method: target
+  target: Qwen3-32B
+  tp: 1
+- id: Qwen3-32B_tp2
+  method: target
+  target: Qwen3-32B
+  tp: 2
+- id: D3D-1.7B-8B_sync
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-1.7B-8B
+  mode: sync
+- id: D3D-1.7B-8B_async
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-1.7B-8B
+  mode: async
+- id: D3D-1.7B-8B_serialized-packed
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-1.7B-8B
+  mode: serialized-packed
+- id: D3D-1.7B-32B_sync
+  method: d3d
+  target: Qwen3-32B
+  drafter: D3D-1.7B-32B
+  mode: sync
+- id: D3D-1.7B-32B_async
+  method: d3d
+  target: Qwen3-32B
+  drafter: D3D-1.7B-32B
+  mode: async
+- id: D3D-1.7B-32B_serialized-packed
+  method: d3d
+  target: Qwen3-32B
+  drafter: D3D-1.7B-32B
+  mode: serialized-packed
+- id: D3D-8B-8B_sync
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-8B-8B
+  mode: sync
+- id: D3D-8B-8B_async
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-8B-8B
+  mode: async
+- id: D3D-8B-8B_serialized-packed
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-8B-8B
+  mode: serialized-packed
+- id: D3D-8B-32B_sync
+  method: d3d
+  target: Qwen3-32B
+  drafter: D3D-8B-32B
+  mode: sync
+- id: D3D-8B-32B_async
+  method: d3d
+  target: Qwen3-32B
+  drafter: D3D-8B-32B
+  mode: async
+- id: D3D-8B-32B_serialized-packed
+  method: d3d
+  target: Qwen3-32B
+  drafter: D3D-8B-32B
+  mode: serialized-packed
+- id: D3D-31D-p8B-8B_sync
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-31D-p8B-8B
+  mode: sync
+- id: D3D-31D-p8B-8B_async
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-31D-p8B-8B
+  mode: async
+- id: D3D-31D-p8B-8B_serialized-packed
+  method: d3d
+  target: Qwen3-8B
+  drafter: D3D-31D-p8B-8B
+  mode: serialized-packed

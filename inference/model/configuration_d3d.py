@@ -15,7 +15,6 @@
 """D3D model configuration"""
 
 from transformers.configuration_utils import PretrainedConfig
-from transformers.modeling_rope_utils import rope_config_validation
 from transformers.utils import logging
 
 
@@ -169,6 +168,7 @@ class D3DConfig(PretrainedConfig):
         eos_token_id=151643,
         **kwargs,
     ):
+        self.use_qk_norm = bool(kwargs.pop("use_qk_norm", True))
         self.vocab_size = vocab_size
         self.max_position_embeddings = max_position_embeddings
         self.hidden_size = hidden_size
@@ -197,7 +197,16 @@ class D3DConfig(PretrainedConfig):
         # BC: if there is a 'type' field, move it to 'rope_type'.
         if self.rope_scaling is not None and "type" in self.rope_scaling:
             self.rope_scaling["rope_type"] = self.rope_scaling["type"]
-        rope_config_validation(self)
+        standardize_rope = getattr(self, "standardize_rope_params", None)
+        if callable(standardize_rope):
+            standardize_rope()
+        validate_rope = getattr(self, "validate_rope", None)
+        if callable(validate_rope):
+            validate_rope()
+        else:
+            from transformers.modeling_rope_utils import rope_config_validation
+
+            rope_config_validation(self)
 
         self.d3d_draft = True
         super().__init__(

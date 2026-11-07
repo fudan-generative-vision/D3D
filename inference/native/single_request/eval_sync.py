@@ -21,6 +21,7 @@ from common.io import safe_custom_tag, safe_tag, write_json
 from common.metrics import compact_acceptance, headline_metrics, summarize_timing_metrics
 from common.runtime import check_hardware, resolve_dtype, resolve_model_path, runtime_metadata
 from common.text import apply_chat_template, contains_stop, eos_token_ids, tokens_to_int_list, trim_at_stop
+from common.token_ids import checkpoint_mask_id, validate_tokenizer_vocab
 
 
 ROOT = Path(__file__).resolve().parent
@@ -77,6 +78,26 @@ def _checkpoint_model_type(model_path: str) -> str | None:
 
 def _is_d3d_checkpoint(model_path: str) -> bool:
     return _checkpoint_model_type(model_path) == "d3d"
+
+
+def _draft_mask_id(model_path, tokenizer):
+    config = json.loads((Path(model_path) / "config.json").read_text())
+    mask_id = checkpoint_mask_id(model_path)
+    draft_tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=False)
+    validate_tokenizer_vocab(
+        tokenizer, draft_tokenizer, vocab_size=config["vocab_size"], mask_token_id=mask_id,
+    )
+    return mask_id
+
+
+def _check_target_cache_support(model_path):
+    config = json.loads((Path(model_path) / "config.json").read_text())
+    text_config = config.get("text_config", config)
+    if "linear_attention" in text_config.get("layer_types", []):
+        raise ValueError(
+            "Native cached verification cannot roll back linear-attention states. "
+            "Use eval_sync without --use-kvcache, or the SGLang remote backend."
+        )
 
 
 
@@ -1473,6 +1494,7 @@ def _summary_step(step: dict[str, Any]) -> AcceptanceStep:
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    global MASK_ID
     if args.dataset not in DATASETS:
         raise ValueError(f"unsupported dataset {args.dataset}; supported: {sorted(DATASETS)}")
     check_hardware(args.verifier_device, args.draft_device)
@@ -1487,6 +1509,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     model_type = args.model_type or _checkpoint_model_type(args.drafter)
     if args.use_kvcache and model_type != "d3d":
         raise ValueError("--use-kvcache is currently supported only for D3D/Qwen3 single-chain paths")
+    if args.use_kvcache:
+        _check_target_cache_support(target_path)
 
     dtype = resolve_dtype(args.dtype)
     target_attn = args.target_attn_implementation or os.environ.get(
@@ -1498,9 +1522,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     args.target_attn_implementation = target_attn
     args.draft_attn_implementation = draft_attn
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=False)
-    eos_token_ids = eos_token_ids(tokenizer, args.eos_token_id)
-    if not eos_token_ids:
-        eos_token_ids = STOP_TOKEN_IDS
+    eos_ids = eos_token_ids(tokenizer, args.eos_token_id, model_path=target_path) or STOP_TOKEN_IDS
+    if model_type == "d3d":
+        MASK_ID = _draft_mask_id(draft_path, tokenizer)
 
     verifier_device = args.verifier_device or "cuda:0"
     draft_device = args.draft_device or verifier_device
@@ -1541,7 +1565,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 target,
                 ids,
                 args.max_new_tokens,
-                eos_token_ids,
+                eos_ids,
                 args.temperature,
                 block_size=args.block_size,
                 denoising_steps=args.denoising_steps,
@@ -1623,7 +1647,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
         per_prompt.append(result)
 
-        payload = _build_payload(args, per_prompt, draft_tokens, eos_token_ids, start_time, dataset_source, model_type)
+        payload = _build_payload(args, per_prompt, draft_tokens, eos_ids, start_time, dataset_source, model_type)
         payload["accuracy"] = {
             "spec_evaluated": spec_eval,
             "spec_accuracy": spec_ok / spec_eval if spec_eval else None,
@@ -1643,7 +1667,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 flush=True,
             )
 
-    payload = _build_payload(args, per_prompt, draft_tokens, eos_token_ids, start_time, dataset_source, model_type)
+    payload = _build_payload(args, per_prompt, draft_tokens, eos_ids, start_time, dataset_source, model_type)
     payload["accuracy"] = {
         "spec_evaluated": spec_eval,
         "spec_accuracy": spec_ok / spec_eval if spec_eval else None,

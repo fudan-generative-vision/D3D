@@ -249,9 +249,11 @@ class D3DAttention(nn.Module):
             config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.attention_bias
         )
         # unlike olmo, only on the head dim!
-        self.q_norm = D3DRMSNorm(self.head_dim, eps=config.rms_norm_eps)
+        self.q_norm = (D3DRMSNorm(self.head_dim, eps=config.rms_norm_eps)
+                       if getattr(config, "use_qk_norm", True) else nn.Identity())
         # thus post q_norm does not need reshape
-        self.k_norm = D3DRMSNorm(self.head_dim, eps=config.rms_norm_eps)
+        self.k_norm = (D3DRMSNorm(self.head_dim, eps=config.rms_norm_eps)
+                       if getattr(config, "use_qk_norm", True) else nn.Identity())
         self.sliding_window = config.sliding_window
         if not (
             self.config.use_sliding_window
@@ -560,6 +562,12 @@ class D3DModel(D3DPreTrainedModel):
         cache_position: Optional[torch.LongTensor] = None,
         **flash_attn_kwargs: Unpack[FlashAttentionKwargs],
     ) -> BaseModelOutputWithPast:
+        r"""
+        store_kv (`bool`, *optional*):
+            Whether to write the projected key and value tensors into `past_key_values`.
+        cache_position (`torch.LongTensor` of shape `(sequence_length)`, *optional*):
+            Indices describing the position of each input token in the sequence.
+        """
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -876,6 +884,8 @@ class D3DForCausalLM(D3DPreTrainedModel, GenerationMixin):
             Labels for computing the masked language modeling loss. Indices should either be in `[0, ...,
             config.vocab_size]` or -100 (see `input_ids` docstring). Tokens with indices set to `-100` are ignored
             (masked), the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`.
+        cache_position (`torch.LongTensor` of shape `(sequence_length)`, *optional*):
+            Indices describing the position of each input token in the sequence.
         Example:
         ```python
         >>> from transformers import AutoTokenizer, D3DForCausalLM

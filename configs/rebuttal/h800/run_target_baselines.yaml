@@ -1,0 +1,31 @@
+schema_version: 1
+kind: h800_suite
+id: target_baselines_if_missing
+datasets:
+- math500
+- humaneval
+- mt-bench
+max_samples: null
+max_new_tokens: 2048
+repeats: 3
+cases:
+- id: Qwen3-32B_tp1
+  group: qwen32_baseline
+  method: target
+  target: Qwen3-32B
+  tp: 1
+- id: Qwen3-32B_tp2
+  group: qwen32_baseline
+  method: target
+  target: Qwen3-32B
+  tp: 2
+- id: Llama-3.1-8B-Instruct_tp1
+  group: llama_baseline
+  method: target
+  target: Llama-3.1-8B-Instruct
+  tp: 1
+- id: Llama-3.1-8B-Instruct_tp2
+  group: llama_baseline
+  method: target
+  target: Llama-3.1-8B-Instruct
+  tp: 2

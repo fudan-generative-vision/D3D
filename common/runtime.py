@@ -31,6 +31,10 @@ def resolve_model_path(model, revision=None):
 def check_hardware(target_device='cuda:0', draft_device='cuda:1'):
     import torch
 
+    target = torch.device(target_device)
+    draft = torch.device(draft_device)
+    if target.type == 'cpu' and draft.type == 'cpu':
+        return
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is unavailable. Use a CUDA-enabled PyTorch build and two NVIDIA GPUs.')
     if target_device == draft_device:

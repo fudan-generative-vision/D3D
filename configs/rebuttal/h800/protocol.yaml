@@ -1,0 +1,71 @@
+schema_version: 1
+kind: evaluation_protocol
+hardware: NVIDIA H800
+precision: bf16
+backend: Transformers 4.57.3 / torch 2.8.0+cu128; keep identical target kernels for matched comparisons
+num_gpus: 2
+batch_size: 1
+datasets:
+- gsm8k
+- math500
+- humaneval
+- mbpp
+- mt-bench
+- aime25
+- livecodebench-v6
+representative:
+- math500
+- humaneval
+- mt-bench
+max_samples: null
+max_new_tokens: 2048
+enable_thinking: false
+temperature: 0.0
+block_size: 16
+async_budget:
+  C: 12
+  F: 2
+  async_blocks: 1
+  anchor_num: 2
+  packed_accepted_counts:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 16
+  query_tokens_at_full_length: 384
+warmup:
+  repetitions: 8
+  new_tokens: 128
+  prompt: first evaluation prompt; fresh KV every repetition
+  every_method: true
+repeats: 3
+prompt_order_seed: 20261106
+reporting:
+  acceptance: sum committed output tokens / verification rounds; also report accepted proposal tokens;
+    terminal rounds identified
+  decode_tps: sum decode output tokens / sum decode seconds
+  end_to_end: Per-prompt wall time including target+drafter prefill, first token, verification, draft,
+    transport, misses, final synchronization; exclude model loading and tokenization
+  speedup: Matched H800 target baseline time / method time; separately report relative to TP1 and TP2
+  memory: Per-device peak allocated and reserved GPU memory; include target/draft KV and communication
+    buffers
+  timing: Per-round t_verify, t_packed_draft, t_redraft, dispatch/transport, serialized-versus-async wall-time difference, cache hit
+    definition, round wall time; p50/p95 and mean
+  statistics: Paired prompt bootstrap 95% intervals; seed-wise training effects reported separately
+rules:
+- Do not combine training-host latency with H800 latency
+- Run formal measurements without concurrent training on the same host
+- Separate profiler runs from performance runs
+- Freeze datasets, prompts, checkpoint paths and training settings, stop rules, and software before comparison
+- A two-replica throughput result is a separate metric from TP2 single-request latency
+- Unpruned/pruned checkpoints and same-size controls must be identified explicitly
+- For greedy exactness compare emitted token IDs against the same target; sampling requires proposal-distribution/acceptance
+  bookkeeping checks, not just task accuracy
